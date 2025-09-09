@@ -2101,7 +2101,7 @@ body.theme-dark .error {
   --tab-bg: transparent;
   --tab-color: #7f8c8d;
   --tab-active-bg: #3498db;
-  --tab-active-color: white;
+  --tab-active-color: black;
   --input-border: #ddd;
   --checkbox-bg: white;
   --primary-button-bg: #3498db;
