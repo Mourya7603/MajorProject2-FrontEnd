@@ -29,6 +29,25 @@ const Reports = () => {
   const [closedByAgentData, setClosedByAgentData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDarkTheme, setIsDarkTheme] = useState(false);
+
+  // Check for dark theme
+  useEffect(() => {
+    const checkTheme = () => {
+      setIsDarkTheme(document.body.classList.contains('theme-dark'));
+    };
+    
+    checkTheme();
+    
+    // Listen for theme changes
+    const observer = new MutationObserver(checkTheme);
+    observer.observe(document.body, { 
+      attributes: true, 
+      attributeFilter: ['class'] 
+    });
+    
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +79,56 @@ const Reports = () => {
 
     fetchData();
   }, []);
+
+  // Chart options with dark mode support
+  const getChartOptions = (title, chartType = 'bar') => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          color: isDarkTheme ? '#e0e0e0' : '#666'
+        }
+      },
+      title: {
+        display: true,
+        text: title,
+        color: isDarkTheme ? '#e0e0e0' : '#666',
+        font: {
+          size: 16
+        }
+      },
+      tooltip: {
+        backgroundColor: isDarkTheme ? '#2d2d2d' : '#fff',
+        titleColor: isDarkTheme ? '#e0e0e0' : '#666',
+        bodyColor: isDarkTheme ? '#e0e0e0' : '#666',
+        borderColor: isDarkTheme ? '#555' : '#ddd',
+        borderWidth: 1
+      }
+    },
+    // Only include scales for bar charts, not pie charts
+    ...(chartType === 'bar' && {
+      scales: {
+        y: {
+          ticks: {
+            color: isDarkTheme ? '#e0e0e0' : '#666'
+          },
+          grid: {
+            color: isDarkTheme ? '#404040' : '#eee'
+          }
+        },
+        x: {
+          ticks: {
+            color: isDarkTheme ? '#e0e0e0' : '#666'
+          },
+          grid: {
+            color: isDarkTheme ? '#404040' : '#eee'
+          }
+        }
+      }
+    })
+  });
 
   if (loading) {
     return (
@@ -211,14 +280,20 @@ const Reports = () => {
         <div className="chart-card">
           <h3>Lead Status Distribution</h3>
           <div className="chart">
-            <Pie data={statusData} />
+            <Pie 
+              data={statusData} 
+              options={getChartOptions("Lead Status Distribution", "pie")} 
+            />
           </div>
         </div>
 
         <div className="chart-card">
           <h3>Leads Closed Last Week</h3>
           <div className="chart">
-            <Bar data={closedLastWeekData} />
+            <Bar 
+              data={closedLastWeekData} 
+              options={getChartOptions("Leads Closed Last Week", "bar")} 
+            />
           </div>
         </div>
 
@@ -227,18 +302,7 @@ const Reports = () => {
           <div className="chart">
             <Bar
               data={agentPerformanceData}
-              options={{
-                responsive: true,
-                plugins: {
-                  legend: {
-                    position: "top",
-                  },
-                  title: {
-                    display: true,
-                    text: "Leads by Agent",
-                  },
-                },
-              }}
+              options={getChartOptions("Agent Performance", "bar")}
             />
           </div>
         </div>

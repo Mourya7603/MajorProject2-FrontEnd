@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { leadsAPI } from "../services/api";
+import { toast } from 'react-toastify';
 
 const LeadForm = ({ salesAgents }) => {
   const { id } = useParams();
@@ -75,17 +76,16 @@ const LeadForm = ({ salesAgents }) => {
 
       if (isEdit) {
         await leadsAPI.update(id, submitData);
+        toast.success('Lead updated successfully!');
       } else {
         await leadsAPI.create(submitData);
+        toast.success('Lead created successfully!');
       }
       navigate(isEdit ? `/leads/${id}` : "/leads");
     } catch (error) {
       console.error("Error saving lead:", error);
-      if (error.response?.data?.error) {
-        alert(`Error: ${error.response.data.error}`);
-      } else {
-        alert("Failed to save lead. Please check your input and try again.");
-      }
+      const errorMessage = error.response?.data?.error || "Failed to save lead. Please check your input and try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

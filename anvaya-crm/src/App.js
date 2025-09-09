@@ -10,11 +10,27 @@ import Reports from "./components/Reports";
 import { agentsAPI } from "./services/api";
 import AddAgentForm from "./components/AddAgentForm";
 import Settings from "./components/Settings";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import "./App.css";
 
 function App() {
   const [salesAgents, setSalesAgents] = useState([]);
   const [loading, setLoading] = useState(true);
+
+   // Initialize theme on app load
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('appSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      // Apply the saved theme
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add(`theme-${parsedSettings.theme || 'light'}`);
+    } else {
+      // Apply default theme
+      document.body.classList.add('theme-light');
+    }
+  }, []);
 
   useEffect(() => {
     const fetchSalesAgents = async () => {
@@ -58,6 +74,17 @@ function App() {
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
+          <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
         </div>
       </div>
     </Router>

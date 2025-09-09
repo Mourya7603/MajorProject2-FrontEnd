@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { leadsAPI, commentsAPI } from "../services/api";
+import { toast } from 'react-toastify';
 
 const LeadDetails = () => {
   const { id } = useParams();
@@ -55,9 +56,11 @@ const LeadDetails = () => {
       });
       setComments([...comments, response.data]);
       setNewComment("");
+      toast.success('Comment added successfully!');
     } catch (err) {
       console.error("Error submitting comment:", err);
-      setError("Failed to submit comment. Please try again.");
+      const errorMessage = err.response?.data?.error || "Failed to submit comment. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -65,7 +68,7 @@ const LeadDetails = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: "20px", fontWeight: "bold" }}>
+      <div className="loading-state">
         Loading lead details...
       </div>
     );
@@ -73,17 +76,11 @@ const LeadDetails = () => {
 
   if (error) {
     return (
-      <div style={{ padding: "20px" }}>
-        <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+      <div className="lead-details-container">
+        <div className="error-message">{error}</div>
         <button
           onClick={() => navigate("/leads")}
-          style={{
-            padding: "8px 14px",
-            background: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-          }}
+          className="back-button"
         >
           Go Back to Leads
         </button>
@@ -93,17 +90,11 @@ const LeadDetails = () => {
 
   if (!lead) {
     return (
-      <div style={{ padding: "20px" }}>
-        <div style={{ color: "red", marginBottom: "10px" }}>Lead not found</div>
+      <div className="lead-details-container">
+        <div className="error-message">Lead not found</div>
         <button
           onClick={() => navigate("/leads")}
-          style={{
-            padding: "8px 14px",
-            background: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-          }}
+          className="back-button"
         >
           Go Back to Leads
         </button>
@@ -112,163 +103,104 @@ const LeadDetails = () => {
   }
 
   return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+    <div className="lead-details-container">
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
-        }}
-      >
+      <div className="lead-details-header">
         <button
           onClick={() => navigate("/leads")}
-          style={{
-            padding: "6px 12px",
-            background: "#f1f1f1",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
+          className="back-button"
         >
           ← Back to Leads
         </button>
-        <h1 style={{ margin: 0, fontSize: "20px" }}>
+        <h1 className="lead-title">
           Lead Details: {lead.name}
         </h1>
         <Link
           to={`/leads/${lead._id}/edit`}
-          style={{
-            padding: "6px 12px",
-            background: "#007bff",
-            color: "white",
-            borderRadius: "4px",
-            textDecoration: "none",
-          }}
+          className="edit-button"
         >
           Edit Lead
         </Link>
       </div>
 
       {/* Lead Info */}
-      <div
-        style={{
-          background: "#f9f9f9",
-          padding: "20px",
-          borderRadius: "6px",
-          marginBottom: "20px",
-        }}
-      >
-        <h2 style={{ marginBottom: "15px" }}>Lead Information</h2>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "10px",
-          }}
-        >
-          <div>
-            <strong>Lead Name:</strong> {lead.name}
+      <div className="lead-info-card">
+        <h2 className="lead-info-title">Lead Information</h2>
+        <div className="info-grid">
+          <div className="info-item">
+            <span className="info-label">Lead Name:</span>
+            <span className="info-value">{lead.name}</span>
           </div>
-          <div>
-            <strong>Sales Agent:</strong>{" "}
-            {lead.salesAgent?.name || "Unassigned"}
+          <div className="info-item">
+            <span className="info-label">Sales Agent:</span>
+            <span className="info-value">{lead.salesAgent?.name || "Unassigned"}</span>
           </div>
-          <div>
-            <strong>Lead Source:</strong> {lead.source}
+          <div className="info-item">
+            <span className="info-label">Lead Source:</span>
+            <span className="info-value">{lead.source}</span>
           </div>
-          <div>
-            <strong>Status:</strong>{" "}
-            <span
-              style={{
-                padding: "2px 6px",
-                background: "#e0f7fa",
-                borderRadius: "4px",
-              }}
-            >
-              {lead.status}
-            </span>
+          <div className="info-item">
+            <span className="info-label">Status:</span>
+            <span className="status-badge">{lead.status}</span>
           </div>
-          <div>
-            <strong>Priority:</strong>{" "}
-            <span
-              style={{
-                padding: "2px 6px",
-                background: "#ffe0b2",
-                borderRadius: "4px",
-              }}
-            >
-              {lead.priority}
-            </span>
+          <div className="info-item">
+            <span className="info-label">Priority:</span>
+            <span className="priority-badge">{lead.priority}</span>
           </div>
-          <div>
-            <strong>Time to Close:</strong> {lead.timeToClose} days
+          <div className="info-item">
+            <span className="info-label">Time to Close:</span>
+            <span className="info-value">{lead.timeToClose} days</span>
           </div>
-          <div>
-            <strong>Created:</strong>{" "}
-            {new Date(lead.createdAt).toLocaleDateString()}
+          <div className="info-item">
+            <span className="info-label">Created:</span>
+            <span className="info-value">{new Date(lead.createdAt).toLocaleDateString()}</span>
           </div>
           {lead.closedAt && (
-            <div>
-              <strong>Closed:</strong>{" "}
-              {new Date(lead.closedAt).toLocaleDateString()}
+            <div className="info-item">
+              <span className="info-label">Closed:</span>
+              <span className="info-value">{new Date(lead.closedAt).toLocaleDateString()}</span>
             </div>
           )}
         </div>
       </div>
 
       {/* Comments */}
-      <div
-        style={{
-          background: "#fff",
-          padding: "20px",
-          border: "1px solid #ddd",
-          borderRadius: "6px",
-        }}
-      >
-        <h2 style={{ marginBottom: "15px" }}>Comments & Activity</h2>
+      <div className="comments-card">
+        <h2 className="comments-title">Comments & Activity</h2>
         {comments.length === 0 ? (
-          <p style={{ fontStyle: "italic", color: "#888" }}>
+          <p className="empty-comments">
             No comments yet. Be the first to add one.
           </p>
         ) : (
-          <div>
+          <div className="comments-list">
             {comments.map((comment) => (
               <div
                 key={comment._id}
-                style={{ borderBottom: "1px solid #eee", padding: "10px 0" }}
+                className="comment-item"
               >
-                <div style={{ fontWeight: "bold" }}>
-                  {comment.author?.name || "System"}{" "}
-                  <span style={{ color: "#888", fontSize: "12px" }}>
-                    ({new Date(comment.createdAt).toLocaleString()})
-                  </span>
+                <div className="comment-header">
+                  <div className="comment-author">
+                    {comment.author?.name || "System"}
+                  </div>
+                  <div className="comment-date">
+                    {new Date(comment.createdAt).toLocaleString()}
+                  </div>
                 </div>
-                <div>{comment.commentText}</div>
+                <div className="comment-text">{comment.commentText}</div>
               </div>
             ))}
           </div>
         )}
 
-        <form onSubmit={handleSubmitComment} style={{ marginTop: "15px" }}>
-          <label
-            htmlFor="comment"
-            style={{ display: "block", marginBottom: "5px" }}
-          >
+        <form onSubmit={handleSubmitComment} className="comment-form">
+          <label htmlFor="comment" className="comment-label">
             Add New Comment:
           </label>
           <textarea
             id="comment"
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            rows="3"
-            style={{
-              width: "100%",
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              marginBottom: "10px",
-            }}
+            className="comment-textarea"
             placeholder="Type your comment..."
             disabled={submitting}
             required
@@ -276,13 +208,7 @@ const LeadDetails = () => {
           <button
             type="submit"
             disabled={submitting || !newComment.trim()}
-            style={{
-              padding: "8px 14px",
-              background: "#28a745",
-              color: "white",
-              border: "none",
-              borderRadius: "4px",
-            }}
+            className="comment-submit"
           >
             {submitting ? "Submitting..." : "Submit Comment"}
           </button>

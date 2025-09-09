@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { agentsAPI } from "../services/api";
+import { toast } from 'react-toastify';
 
 const AddAgentForm = () => {
   const navigate = useNavigate();
@@ -23,14 +24,13 @@ const AddAgentForm = () => {
 
     try {
       await agentsAPI.create(formData);
+      toast.success('Sales agent created successfully!');
       navigate("/agents");
     } catch (err) {
       console.error("Error creating agent:", err);
-      if (err.response?.data?.error) {
-        setError(err.response.data.error);
-      } else {
-        setError("Failed to create sales agent. Please try again.");
-      }
+      const errorMessage = err.response?.data?.error || "Failed to create sales agent. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

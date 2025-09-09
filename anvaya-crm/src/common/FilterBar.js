@@ -54,31 +54,17 @@ const FilterBar = ({ onFilterChange }) => {
 
   if (loading) {
     return (
-      <div style={{ padding: "10px", fontStyle: "italic" }}>
+      <div className="filter-loading">
         Loading filters...
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "15px",
-        padding: "15px",
-        background: "#f8f9fa",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        marginBottom: "20px",
-      }}
-    >
+    <div className="filter-bar-container">
       {/* Status */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <label
-          htmlFor="status"
-          style={{ fontWeight: "bold", marginBottom: "4px" }}
-        >
+      <div className="filter-group">
+        <label htmlFor="status">
           Status
         </label>
         <select
@@ -96,11 +82,8 @@ const FilterBar = ({ onFilterChange }) => {
       </div>
 
       {/* Sales Agent */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <label
-          htmlFor="salesAgent"
-          style={{ fontWeight: "bold", marginBottom: "4px" }}
-        >
+      <div className="filter-group">
+        <label htmlFor="salesAgent">
           Sales Agent
         </label>
         <select
@@ -118,11 +101,8 @@ const FilterBar = ({ onFilterChange }) => {
       </div>
 
       {/* Priority */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <label
-          htmlFor="priority"
-          style={{ fontWeight: "bold", marginBottom: "4px" }}
-        >
+      <div className="filter-group">
+        <label htmlFor="priority">
           Priority
         </label>
         <select
@@ -138,11 +118,8 @@ const FilterBar = ({ onFilterChange }) => {
       </div>
 
       {/* Source */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <label
-          htmlFor="source"
-          style={{ fontWeight: "bold", marginBottom: "4px" }}
-        >
+      <div className="filter-group">
+        <label htmlFor="source">
           Source
         </label>
         <select
@@ -161,11 +138,8 @@ const FilterBar = ({ onFilterChange }) => {
       </div>
 
       {/* Tags */}
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <label
-          htmlFor="tags"
-          style={{ fontWeight: "bold", marginBottom: "4px" }}
-        >
+      <div className="filter-group">
+        <label htmlFor="tags">
           Tags
         </label>
         <select
@@ -183,17 +157,10 @@ const FilterBar = ({ onFilterChange }) => {
       </div>
 
       {/* Clear Button */}
-      <div style={{ display: "flex", alignItems: "flex-end" }}>
+      <div className="filter-clear-container">
         <button
           onClick={clearFilters}
-          style={{
-            padding: "6px 12px",
-            background: "#dc3545",
-            color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
+          className="filter-clear-button"
         >
           Clear Filters
         </button>

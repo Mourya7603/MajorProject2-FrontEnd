@@ -1,12 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FaUser,
   FaPalette,
   FaBell,
-  FaDatabase,
   FaShieldAlt,
-  FaInfoCircle,
+  FaTrash,
+  FaUsers,
+  FaChartLine,
+  FaTimes
 } from "react-icons/fa";
+import { leadsAPI, agentsAPI } from "../services/api";
+import { toast } from "react-toastify";
 
 const SimpleSettings = () => {
   const [activeTab, setActiveTab] = useState("profile");
@@ -17,17 +21,114 @@ const SimpleSettings = () => {
     emailNotifications: true,
     twoFactorAuth: false,
   });
+  const [leads, setLeads] = useState([]);
+  const [agents, setAgents] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [deleteType, setDeleteType] = useState(""); // "lead" or "agent"
+
+  // Load saved settings when component loads
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('appSettings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      setSettings(parsedSettings);
+      applyTheme(parsedSettings.theme);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "leads" || activeTab === "agents") {
+      fetchData();
+    }
+  }, [activeTab]);
+
+  // Function to change the theme of the ENTIRE app
+  const applyTheme = (theme) => {
+    // Remove any existing theme classes
+    document.body.classList.remove('theme-light', 'theme-dark');
+    
+    // Add the new theme class
+    document.body.classList.add(`theme-${theme}`);
+  };
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      if (activeTab === "leads") {
+        const response = await leadsAPI.getAll();
+        setLeads(response.data || []);
+      } else if (activeTab === "agents") {
+        const response = await agentsAPI.getAll();
+        setAgents(response.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setSettings((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    const newValue = type === "checkbox" ? checked : value;
+    
+    setSettings((prev) => {
+      const updatedSettings = {
+        ...prev,
+        [name]: newValue
+      };
+      
+      // If theme is changed, apply it immediately
+      if (name === 'theme') {
+        applyTheme(newValue);
+      }
+      
+      // Save to browser storage
+      localStorage.setItem('appSettings', JSON.stringify(updatedSettings));
+      
+      return updatedSettings;
+    });
   };
 
   const handleSave = () => {
-    alert("Settings saved successfully!");
+    localStorage.setItem('appSettings', JSON.stringify(settings));
+    toast.success("Settings saved successfully!");
+  };
+
+  const openDeleteModal = (type, id, name) => {
+    setDeleteType(type);
+    setItemToDelete({ id, name });
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+    setDeleteType("");
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      if (deleteType === "lead") {
+        await leadsAPI.delete(itemToDelete.id);
+        setLeads(leads.filter(lead => lead._id !== itemToDelete.id));
+        toast.success(`Lead "${itemToDelete.name}" deleted successfully!`);
+      } else if (deleteType === "agent") {
+        await agentsAPI.delete(itemToDelete.id);
+        setAgents(agents.filter(agent => agent._id !== itemToDelete.id));
+        toast.success(`Agent "${itemToDelete.name}" deleted successfully!`);
+      }
+    } catch (error) {
+      console.error(`Error deleting ${deleteType}:`, error);
+      toast.error(`Failed to delete ${deleteType}`);
+    } finally {
+      closeDeleteModal();
+    }
   };
 
   const tabs = [
@@ -35,89 +136,123 @@ const SimpleSettings = () => {
     { id: "appearance", label: "Appearance", icon: <FaPalette /> },
     { id: "notifications", label: "Notifications", icon: <FaBell /> },
     { id: "security", label: "Security", icon: <FaShieldAlt /> },
+    { id: "leads", label: "Manage Leads", icon: <FaChartLine /> },
+    { id: "agents", label: "Manage Agents", icon: <FaUsers /> },
   ];
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.title}>Settings</h1>
-        <p style={styles.subtitle}>Manage your account preferences</p>
+    <div className="settings-container">
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>Confirm Delete</h3>
+              <button className="modal-close" onClick={closeDeleteModal}>
+                <FaTimes />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p>
+                {deleteType === "lead" 
+                  ? `Are you sure you want to delete lead "${itemToDelete.name}"? This action cannot be undone.`
+                  : `Are you sure you want to delete agent "${itemToDelete.name}"? This will also unassign all their leads.`
+                }
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="settings-cancel-button" onClick={closeDeleteModal}>
+                Cancel
+              </button>
+              <button className="settings-delete-button" onClick={confirmDelete}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="settings-header">
+        <h1 className="settings-title">Settings</h1>
+        <p className="settings-subtitle">Manage your account preferences</p>
       </div>
 
-      <div style={styles.content}>
-        <div style={styles.sidebar}>
+      <div className="settings-content">
+        <div className="settings-sidebar">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              style={{
-                ...styles.tab,
-                ...(activeTab === tab.id ? styles.activeTab : {}),
-              }}
+              className={`settings-tab ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span style={styles.tabIcon}>{tab.icon}</span>
+              <span className="settings-tab-icon">{tab.icon}</span>
               <span>{tab.label}</span>
             </button>
           ))}
         </div>
 
-        <div style={styles.main}>
+        <div className="settings-main">
           {activeTab === "profile" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Profile Information</h2>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Name</label>
+            <div className="settings-section">
+              <h2 className="settings-section-title">Profile Information</h2>
+              <div className="settings-form-group">
+                <label className="settings-label">Name</label>
                 <input
                   type="text"
                   name="name"
                   value={settings.name}
                   onChange={handleInputChange}
-                  style={styles.input}
+                  className="settings-input"
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Email</label>
+              <div className="settings-form-group">
+                <label className="settings-label">Email</label>
                 <input
                   type="email"
                   name="email"
                   value={settings.email}
                   onChange={handleInputChange}
-                  style={styles.input}
+                  className="settings-input"
                 />
               </div>
             </div>
           )}
 
           {activeTab === "appearance" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Appearance</h2>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Theme</label>
+            <div className="settings-section">
+              <h2 className="settings-section-title">Appearance</h2>
+              <div className="settings-form-group">
+                <label className="settings-label">Theme</label>
                 <select
                   name="theme"
                   value={settings.theme}
                   onChange={handleInputChange}
-                  style={styles.select}
+                  className="settings-select"
                 >
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
-                  <option value="auto">Auto</option>
                 </select>
+              </div>
+              <div className="settings-theme-preview">
+                <h3 className="settings-preview-title">Preview</h3>
+                <div className="settings-preview-box">
+                  <p>This is how your application will look with the {settings.theme} theme.</p>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === "notifications" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Notifications</h2>
-              <div style={styles.checkboxGroup}>
-                <label style={styles.checkboxLabel}>
+            <div className="settings-section">
+              <h2 className="settings-section-title">Notifications</h2>
+              <div className="settings-checkbox-group">
+                <label className="settings-checkbox-label">
                   <input
                     type="checkbox"
                     name="emailNotifications"
                     checked={settings.emailNotifications}
                     onChange={handleInputChange}
-                    style={styles.checkbox}
+                    className="settings-checkbox"
                   />
                   Email Notifications
                 </label>
@@ -126,178 +261,104 @@ const SimpleSettings = () => {
           )}
 
           {activeTab === "security" && (
-            <div style={styles.section}>
-              <h2 style={styles.sectionTitle}>Security</h2>
-              <div style={styles.checkboxGroup}>
-                <label style={styles.checkboxLabel}>
+            <div className="settings-section">
+              <h2 className="settings-section-title">Security</h2>
+              <div className="settings-checkbox-group">
+                <label className="settings-checkbox-label">
                   <input
                     type="checkbox"
                     name="twoFactorAuth"
                     checked={settings.twoFactorAuth}
                     onChange={handleInputChange}
-                    style={styles.checkbox}
+                    className="settings-checkbox"
                   />
                   Two-Factor Authentication
                 </label>
               </div>
-              <button style={styles.secondaryButton}>Change Password</button>
+              <button className="settings-secondary-button">Change Password</button>
             </div>
           )}
 
-          <div style={styles.actions}>
-            <button style={styles.primaryButton} onClick={handleSave}>
-              Save Changes
-            </button>
-            <button style={styles.cancelButton}>Cancel</button>
-          </div>
+          {activeTab === "leads" && (
+            <div className="settings-section">
+              <h2 className="settings-section-title">Manage Leads</h2>
+              {loading ? (
+                <div className="settings-loading">Loading leads...</div>
+              ) : leads.length === 0 ? (
+                <p className="settings-no-data">No leads found.</p>
+              ) : (
+                <div className="settings-list-container">
+                  {leads.map((lead, index) => (
+                    <div 
+                      key={lead._id} 
+                      className="settings-list-item"
+                      style={index === leads.length - 1 ? {borderBottom: 'none'} : {}}
+                    >
+                      <div className="settings-item-info">
+                        <div className="settings-item-name">{lead.name}</div>
+                        <div className="settings-item-details">
+                          {lead.status} • {lead.priority} • {lead.salesAgent?.name || "Unassigned"}
+                        </div>
+                      </div>
+                      <button
+                        className="settings-delete-button"
+                        onClick={() => openDeleteModal("lead", lead._id, lead.name)}
+                        title="Delete lead"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === "agents" && (
+            <div className="settings-section">
+              <h2 className="settings-section-title">Manage Sales Agents</h2>
+              {loading ? (
+                <div className="settings-loading">Loading agents...</div>
+              ) : agents.length === 0 ? (
+                <p className="settings-no-data">No agents found.</p>
+              ) : (
+                <div className="settings-list-container">
+                  {agents.map((agent, index) => (
+                    <div 
+                      key={agent._id} 
+                      className="settings-list-item"
+                      style={index === agents.length - 1 ? {borderBottom: 'none'} : {}}
+                    >
+                      <div className="settings-item-info">
+                        <div className="settings-item-name">{agent.name}</div>
+                        <div className="settings-item-details">{agent.email}</div>
+                      </div>
+                      <button
+                        className="settings-delete-button"
+                        onClick={() => openDeleteModal("agent", agent._id, agent.name)}
+                        title="Delete agent"
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab !== "leads" && activeTab !== "agents" && (
+            <div className="settings-actions">
+              <button className="settings-primary-button" onClick={handleSave}>
+                Save Changes
+              </button>
+              <button className="settings-cancel-button">Cancel</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-};
-
-const styles = {
-  container: {
-    maxWidth: "1000px",
-    margin: "0 auto",
-    padding: "20px",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    color: "#333",
-  },
-  header: {
-    marginBottom: "30px",
-    paddingBottom: "20px",
-    borderBottom: "1px solid #e0e0e0",
-  },
-  title: {
-    fontSize: "28px",
-    color: "#2c3e50",
-    marginBottom: "8px",
-  },
-  subtitle: {
-    color: "#7f8c8d",
-    margin: 0,
-  },
-  content: {
-    display: "flex",
-    flexDirection: "row",
-    gap: "30px",
-  },
-  sidebar: {
-    width: "250px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "5px",
-  },
-  tab: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "15px 20px",
-    border: "none",
-    background: "transparent",
-    color: "#7f8c8d",
-    cursor: "pointer",
-    fontSize: "16px",
-    fontWeight: "500",
-    width: "100%",
-    textAlign: "left",
-    borderRadius: "8px",
-    transition: "all 0.2s",
-  },
-  activeTab: {
-    background: "#3498db",
-    color: "white",
-  },
-  tabIcon: {
-    fontSize: "18px",
-  },
-  main: {
-    flex: 1,
-    background: "white",
-    borderRadius: "10px",
-    padding: "25px",
-    boxShadow: "0 5px 15px rgba(0, 0, 0, 0.05)",
-  },
-  section: {
-    marginBottom: "30px",
-  },
-  sectionTitle: {
-    fontSize: "20px",
-    color: "#2c3e50",
-    marginBottom: "20px",
-  },
-  formGroup: {
-    marginBottom: "20px",
-  },
-  label: {
-    display: "block",
-    marginBottom: "8px",
-    fontWeight: "500",
-    color: "#2c3e50",
-  },
-  input: {
-    width: "100%",
-    padding: "12px 15px",
-    border: "1px solid #ddd",
-    borderRadius: "5px",
-    fontSize: "16px",
-    boxSizing: "border-box",
-  },
-  select: {
-    width: "100%",
-    padding: "12px 15px",
-    border: "1px solid #ddd",
-    borderRadius: "5px",
-    fontSize: "16px",
-    boxSizing: "border-box",
-    background: "white",
-  },
-  checkboxGroup: {
-    marginBottom: "15px",
-  },
-  checkboxLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    cursor: "pointer",
-  },
-  checkbox: {
-    width: "18px",
-    height: "18px",
-  },
-  actions: {
-    display: "flex",
-    gap: "10px",
-    marginTop: "30px",
-  },
-  primaryButton: {
-    background: "#3498db",
-    color: "white",
-    padding: "12px 25px",
-    border: "none",
-    borderRadius: "5px",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-  cancelButton: {
-    background: "#95a5a6",
-    color: "white",
-    padding: "12px 25px",
-    border: "none",
-    borderRadius: "5px",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-  secondaryButton: {
-    background: "transparent",
-    color: "#3498db",
-    padding: "10px 20px",
-    border: "1px solid #3498db",
-    borderRadius: "5px",
-    fontSize: "14px",
-    cursor: "pointer",
-  },
 };
 
 export default SimpleSettings;
