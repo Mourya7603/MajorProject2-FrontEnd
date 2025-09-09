@@ -1107,7 +1107,9 @@ body {
   background: #e9ecef;
   color: #2c3e50;
 }
-
+body.theme-dark .settings-tab:hover {
+  background: rgba(41, 128, 185, 0.15);
+}
 .settings-tab.active {
   background: #3498db;
   color: white;
