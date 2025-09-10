@@ -183,6 +183,14 @@ body {
 }
 
 /* Dashboard Styles */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
 .dashboard-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -1097,9 +1105,12 @@ body {
 
 .settings-tab:hover {
   background: #e9ecef;
-  color: #2c3e50;
+  color: var(--tab-active-color);
 }
-
+body.theme-dark .settings-tab:hover {
+  background: rgba(41, 128, 185, 0.15);
+  color: white;
+}
 .settings-tab.active {
   background: #3498db;
   color: white;
@@ -2090,7 +2101,7 @@ body.theme-dark .error {
   --tab-bg: transparent;
   --tab-color: #7f8c8d;
   --tab-active-bg: #3498db;
-  --tab-active-color: white;
+  --tab-active-color: black;
   --input-border: #ddd;
   --checkbox-bg: white;
   --primary-button-bg: #3498db;
